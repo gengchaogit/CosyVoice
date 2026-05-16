@@ -21,6 +21,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import numpy as np
+import torch
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append('{}/../../..'.format(ROOT_DIR))
 sys.path.append('{}/../../../third_party/Matcha-TTS'.format(ROOT_DIR))
@@ -107,6 +108,31 @@ if __name__ == '__main__':
                         type=str,
                         default='iic/CosyVoice2-0.5B',
                         help='local path or modelscope repo id')
+    parser.add_argument('--load-vllm',
+                        action='store_true',
+                        default=False,
+                        help='use vLLM for LLM acceleration (2-3x speedup)')
+    parser.add_argument('--load-trt',
+                        action='store_true',
+                        default=False,
+                        help='use TensorRT for flow decoder acceleration')
+    parser.add_argument('--warmup',
+                        action='store_true',
+                        default=False,
+                        help='run warm-up inference on startup')
+    parser.add_argument('--workers',
+                        type=int,
+                        default=1,
+                        help='number of uvicorn workers')
     args = parser.parse_args()
-    cosyvoice = AutoModel(model_dir=args.model_dir)
-    uvicorn.run(app, host="0.0.0.0", port=args.port)
+    cosyvoice = AutoModel(model_dir=args.model_dir, load_vllm=args.load_vllm, load_trt=args.load_trt)
+    if args.warmup:
+        import logging
+        logging.info('warmup: running dummy inference...')
+        try:
+            for _ in cosyvoice.inference_zero_shot('warmup', 'You are a helpful assistant.<|endofprompt|>warmup', torch.zeros(1, 24000), stream=False):
+                pass
+            logging.info('warmup done')
+        except Exception:
+            pass
+    uvicorn.run(app, host="0.0.0.0", port=args.port, workers=args.workers)
