@@ -125,7 +125,15 @@ if __name__ == '__main__':
                         default=1,
                         help='number of uvicorn workers')
     args = parser.parse_args()
-    cosyvoice = AutoModel(model_dir=args.model_dir, load_vllm=args.load_vllm, load_trt=args.load_trt)
+    try:
+        cosyvoice = AutoModel(model_dir=args.model_dir, load_vllm=args.load_vllm, load_trt=args.load_trt)
+    except Exception as e:
+        logging.error('failed to initialize model with load_vllm=%s, load_trt=%s, error: %s', args.load_vllm, args.load_trt, e)
+        if args.load_trt:
+            logging.warning('--load-trt failed, falling back without TensorRT')
+            cosyvoice = AutoModel(model_dir=args.model_dir, load_vllm=args.load_vllm, load_trt=False)
+        else:
+            raise
     if args.warmup:
         import logging
         logging.info('warmup: running dummy inference...')
