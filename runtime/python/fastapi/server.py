@@ -53,19 +53,21 @@ async def inference_sft(tts_text: str = Form(), spk_id: str = Form()):
 
 @app.get("/inference_zero_shot")
 @app.post("/inference_zero_shot")
-async def inference_zero_shot(tts_text: str = Form(), prompt_text: str = Form(), prompt_wav: UploadFile = File()):
+async def inference_zero_shot(tts_text: str = Form(), prompt_text: str = Form(), prompt_wav: UploadFile = File(),
+                               speed: float = Form(1.0), stream: bool = Form(False)):
     if '<|endofprompt|>' not in prompt_text:
         prompt_text = 'You are a helpful assistant.<|endofprompt|>' + prompt_text
     prompt_speech_16k = load_wav(prompt_wav.file, 16000)
-    model_output = cosyvoice.inference_zero_shot(tts_text, prompt_text, prompt_speech_16k)
+    model_output = cosyvoice.inference_zero_shot(tts_text, prompt_text, prompt_speech_16k, stream=stream, speed=speed)
     return StreamingResponse(generate_data(model_output))
 
 
 @app.get("/inference_cross_lingual")
 @app.post("/inference_cross_lingual")
-async def inference_cross_lingual(tts_text: str = Form(), prompt_wav: UploadFile = File()):
+async def inference_cross_lingual(tts_text: str = Form(), prompt_wav: UploadFile = File(),
+                                   speed: float = Form(1.0), stream: bool = Form(False)):
     prompt_speech_16k = load_wav(prompt_wav.file, 16000)
-    model_output = cosyvoice.inference_cross_lingual(tts_text, prompt_speech_16k)
+    model_output = cosyvoice.inference_cross_lingual(tts_text, prompt_speech_16k, stream=stream, speed=speed)
     return StreamingResponse(generate_data(model_output))
 
 
@@ -78,11 +80,12 @@ async def inference_instruct(tts_text: str = Form(), spk_id: str = Form(), instr
 
 @app.get("/inference_instruct2")
 @app.post("/inference_instruct2")
-async def inference_instruct2(tts_text: str = Form(), instruct_text: str = Form(), prompt_wav: UploadFile = File()):
+async def inference_instruct2(tts_text: str = Form(), instruct_text: str = Form(), prompt_wav: UploadFile = File(),
+                               speed: float = Form(1.0), stream: bool = Form(False)):
     if '<|endofprompt|>' not in instruct_text:
         instruct_text = 'You are a helpful assistant.<|endofprompt|>' + instruct_text
     prompt_speech_16k = load_wav(prompt_wav.file, 16000)
-    model_output = cosyvoice.inference_instruct2(tts_text, instruct_text, prompt_speech_16k)
+    model_output = cosyvoice.inference_instruct2(tts_text, instruct_text, prompt_speech_16k, stream=stream, speed=speed)
     return StreamingResponse(generate_data(model_output))
 
 
