@@ -44,6 +44,12 @@ def generate_data(model_output):
         yield tts_audio
 
 
+def enforce_speed_stream(speed, stream):
+    if speed != 1.0 and stream:
+        return False, speed
+    return stream, speed
+
+
 @app.get("/inference_sft")
 @app.post("/inference_sft")
 async def inference_sft(tts_text: str = Form(), spk_id: str = Form()):
@@ -57,6 +63,7 @@ async def inference_zero_shot(tts_text: str = Form(), prompt_text: str = Form(),
                                speed: float = Form(1.0), stream: bool = Form(False)):
     if '<|endofprompt|>' not in prompt_text:
         prompt_text = 'You are a helpful assistant.<|endofprompt|>' + prompt_text
+    stream, speed = enforce_speed_stream(speed, stream)
     prompt_speech_16k = load_wav(prompt_wav.file, 16000)
     model_output = cosyvoice.inference_zero_shot(tts_text, prompt_text, prompt_speech_16k, stream=stream, speed=speed)
     return StreamingResponse(generate_data(model_output))
@@ -66,6 +73,7 @@ async def inference_zero_shot(tts_text: str = Form(), prompt_text: str = Form(),
 @app.post("/inference_cross_lingual")
 async def inference_cross_lingual(tts_text: str = Form(), prompt_wav: UploadFile = File(),
                                    speed: float = Form(1.0), stream: bool = Form(False)):
+    stream, speed = enforce_speed_stream(speed, stream)
     prompt_speech_16k = load_wav(prompt_wav.file, 16000)
     model_output = cosyvoice.inference_cross_lingual(tts_text, prompt_speech_16k, stream=stream, speed=speed)
     return StreamingResponse(generate_data(model_output))
@@ -84,6 +92,7 @@ async def inference_instruct2(tts_text: str = Form(), instruct_text: str = Form(
                                speed: float = Form(1.0), stream: bool = Form(False)):
     if '<|endofprompt|>' not in instruct_text:
         instruct_text = 'You are a helpful assistant.<|endofprompt|>' + instruct_text
+    stream, speed = enforce_speed_stream(speed, stream)
     prompt_speech_16k = load_wav(prompt_wav.file, 16000)
     model_output = cosyvoice.inference_instruct2(tts_text, instruct_text, prompt_speech_16k, stream=stream, speed=speed)
     return StreamingResponse(generate_data(model_output))
