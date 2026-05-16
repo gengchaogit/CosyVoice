@@ -25,6 +25,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append('{}/../../..'.format(ROOT_DIR))
 sys.path.append('{}/../../../third_party/Matcha-TTS'.format(ROOT_DIR))
 from cosyvoice.cli.cosyvoice import AutoModel
+from cosyvoice.utils.file_utils import load_wav
 
 
 app = FastAPI()
@@ -55,16 +56,16 @@ async def inference_sft(tts_text: str = Form(), spk_id: str = Form()):
 async def inference_zero_shot(tts_text: str = Form(), prompt_text: str = Form(), prompt_wav: UploadFile = File()):
     if '<|endofprompt|>' not in prompt_text:
         prompt_text = 'You are a helpful assistant.<|endofprompt|>' + prompt_text
-    prompt_wav.file.seek(0)
-    model_output = cosyvoice.inference_zero_shot(tts_text, prompt_text, prompt_wav.file)
+    prompt_speech_16k = load_wav(prompt_wav.file, 16000)
+    model_output = cosyvoice.inference_zero_shot(tts_text, prompt_text, prompt_speech_16k)
     return StreamingResponse(generate_data(model_output))
 
 
 @app.get("/inference_cross_lingual")
 @app.post("/inference_cross_lingual")
 async def inference_cross_lingual(tts_text: str = Form(), prompt_wav: UploadFile = File()):
-    prompt_wav.file.seek(0)
-    model_output = cosyvoice.inference_cross_lingual(tts_text, prompt_wav.file)
+    prompt_speech_16k = load_wav(prompt_wav.file, 16000)
+    model_output = cosyvoice.inference_cross_lingual(tts_text, prompt_speech_16k)
     return StreamingResponse(generate_data(model_output))
 
 
@@ -80,8 +81,8 @@ async def inference_instruct(tts_text: str = Form(), spk_id: str = Form(), instr
 async def inference_instruct2(tts_text: str = Form(), instruct_text: str = Form(), prompt_wav: UploadFile = File()):
     if '<|endofprompt|>' not in instruct_text:
         instruct_text = 'You are a helpful assistant.<|endofprompt|>' + instruct_text
-    prompt_wav.file.seek(0)
-    model_output = cosyvoice.inference_instruct2(tts_text, instruct_text, prompt_wav.file)
+    prompt_speech_16k = load_wav(prompt_wav.file, 16000)
+    model_output = cosyvoice.inference_instruct2(tts_text, instruct_text, prompt_speech_16k)
     return StreamingResponse(generate_data(model_output))
 
 
